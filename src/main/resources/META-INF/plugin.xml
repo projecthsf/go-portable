@@ -1,0 +1,103 @@
+<idea-plugin>
+    <id>io.genai.go</id>
+    <name>Go Portable</name>
+    <version>0.1.0</version>
+    <vendor url="https://genai.io.vn/" email="contact@genai.io.vn">GenAI</vendor>
+
+    <description><![CDATA[
+        <p><b>Write &amp; run Go in IntelliJ IDEA Community — for free.</b> Go Portable adds
+        lightweight Go support to the free IDE, with <b>no GoLand license</b> and <b>no
+        system-wide Go install</b> required. IntelliJ IDEA Community doesn't bundle the official
+        Go plugin (that's Ultimate / GoLand only), so this fills the gap.</p>
+        <ul>
+          <li><b>Portable Go toolchain</b> — download a Go toolchain from inside the IDE
+              (like the JDK downloader), straight from <code>go.dev/dl</code>. Stored under
+              <code>~/.go-portable</code>; switch versions anytime.</li>
+          <li><b>Run with one click</b> — a green ▶ gutter marker on <code>func main()</code>,
+              plus right-click ▸ Run. Runs the whole <b>package</b> from the module root, so
+              relative paths and <code>.env</code> config resolve just like GoLand — with an
+              Environment variables field (and <code>ENV_FILE</code> auto-filled when a root
+              <code>.env</code> exists).</li>
+          <li><b>Code intelligence</b> (optional) — completion, go-to-definition, hover docs and
+              error highlighting via <b>gopls</b>, the official Go language server, bridged with
+              the free <b>LSP4IJ</b> plugin. One click installs gopls on your portable toolchain.
+              Fully offline; no Node.js.</li>
+          <li><b>Syntax highlighting</b> — for <code>.go</code> files (keywords, strings, comments,
+              numbers), even without the language server.</li>
+          <li><b>Run go tools</b> — <code>go mod</code> / <code>go get</code> / <code>build</code>
+              / <code>test</code> / <code>vet</code> / <code>fmt</code> in a console.</li>
+        </ul>
+        <p>Active on IDEs without built-in Go (IDEA Community, PyCharm, WebStorm, …). On GoLand /
+        IDEA Ultimate the native Go support is used instead — this plugin steps aside.</p>
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <b>0.1.0</b>
+        <ul>
+          <li>Initial release.</li>
+          <li>Download a portable Go toolchain from inside the IDE (from go.dev/dl).</li>
+          <li>Run a .go file/package: ▶ gutter marker on <code>func main()</code>, runs the
+              package from the module root, Environment variables field with ENV_FILE auto-fill.</li>
+          <li>Optional gopls code intelligence via LSP4IJ (one-click setup), lexer-based syntax
+              highlighting, and a go mod/get/build/test/vet/fmt runner.</li>
+        </ul>
+    ]]></change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+
+    <!-- Optional: Go code intelligence (completion / navigation / errors) via LSP4IJ + gopls.
+         Loads only when LSP4IJ is installed, so the core plugin (run a .go file, highlighting,
+         portable toolchains) stays dependency-free and works on every IDE. -->
+    <depends optional="true" config-file="lsp.xml">com.redhat.devtools.lsp4ij</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <sdkType implementation="io.genai.go.sdk.GoSdkType"/>
+
+        <!-- File type + highlighting. No `extensions=` on purpose: we must NOT statically claim
+             .go, or we would clash with the official Go plugin on GoLand / IDEA Ultimate. The
+             .go extension is bound at runtime, only where no official Go support exists — see
+             io.genai.go.lang.GoLanguageActivation. Language id is "GoPortable" (unique). -->
+        <fileType
+            name="Go File"
+            language="GoPortable"
+            implementationClass="io.genai.go.lang.GoFileType"
+            fieldName="INSTANCE"/>
+        <lang.syntaxHighlighterFactory
+            language="GoPortable"
+            implementationClass="io.genai.go.lang.GoSyntaxHighlighterFactory"/>
+        <lang.parserDefinition
+            language="GoPortable"
+            implementationClass="io.genai.go.lang.GoParserDefinition"/>
+
+        <postStartupActivity implementation="io.genai.go.lang.GoLanguageActivation"/>
+
+        <configurationType implementation="io.genai.go.run.GoRunConfigurationType"/>
+        <runConfigurationProducer implementation="io.genai.go.run.GoRunConfigurationProducer"/>
+        <!-- Green ▶ gutter marker next to func main() in a package main file. -->
+        <runLineMarkerContributor
+            language="GoPortable"
+            implementationClass="io.genai.go.run.GoRunLineMarkerContributor"/>
+
+        <applicationConfigurable
+            parentId="language"
+            id="io.genai.go.sdks"
+            displayName="Go Portable"
+            instance="io.genai.go.settings.GoConfigurable"/>
+
+        <editorNotificationProvider implementation="io.genai.go.notify.GoSetupNotificationProvider"/>
+        <editorNotificationProvider implementation="io.genai.go.notify.GoCodeIntelligenceNotificationProvider"/>
+    </extensions>
+
+    <actions>
+        <action
+            id="io.genai.go.RunGoTool"
+            class="io.genai.go.tools.RunGoToolAction"
+            text="Run Go Tool (Portable)…"
+            description="Run a go command (mod / get / build / test) using the Go Portable toolchain"
+            icon="/icons/go.svg">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
