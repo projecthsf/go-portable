@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>io.genai.go</id>
     <name>Go Portable</name>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <vendor url="https://genai.io.vn/" email="contact@genai.io.vn">GenAI</vendor>
 
     <description><![CDATA[
@@ -32,6 +32,16 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.1.1</b>
+        <ul>
+          <li><b>.go files are recognised right away.</b> Syntax highlighting and the ▶ gutter
+              marker now apply the moment a <code>.go</code> file is opened, instead of after the
+              first project startup pass.</li>
+          <li><b>Cleanly steps aside for official Go support.</b> On GoLand — or IntelliJ IDEA
+              Ultimate with the Go plugin installed — this plugin no longer loads at all, so there
+              is no chance of it competing for <code>.go</code> files. Everywhere else (IDEA
+              Community, and Ultimate without the Go plugin) it works exactly as before.</li>
+        </ul>
         <b>0.1.0</b>
         <ul>
           <li>Initial release.</li>
@@ -46,6 +56,12 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.lang</depends>
 
+    <!-- Where official Go support exists (GoLand, or IDEA Ultimate with the Go plugin installed)
+         we don't load at all. That lets the <fileType> below claim `.go` statically without ever
+         racing the official plugin for the extension — see ConflictingFileTypeMappingTracker,
+         which would otherwise hand `.go` to whichever plugin registered last. -->
+    <incompatible-with>org.jetbrains.plugins.go</incompatible-with>
+
     <!-- Optional: Go code intelligence (completion / navigation / errors) via LSP4IJ + gopls.
          Loads only when LSP4IJ is installed, so the core plugin (run a .go file, highlighting,
          portable toolchains) stays dependency-free and works on every IDE. -->
@@ -54,15 +70,19 @@
     <extensions defaultExtensionNs="com.intellij">
         <sdkType implementation="io.genai.go.sdk.GoSdkType"/>
 
-        <!-- File type + highlighting. No `extensions=` on purpose: we must NOT statically claim
-             .go, or we would clash with the official Go plugin on GoLand / IDEA Ultimate. The
-             .go extension is bound at runtime, only where no official Go support exists — see
-             io.genai.go.lang.GoLanguageActivation. Language id is "GoPortable" (unique). -->
+        <!-- File type + highlighting. `extensions=` is declared statically for two reasons:
+             .go is recognised on first open (no startup pass needed), and JetBrains Marketplace
+             indexes this attribute — it is the ONLY input to the "plugin recommended for *.go"
+             suggestion the IDE shows on an unknown file type. Safe to claim it because
+             <incompatible-with> above keeps us out of every IDE that has official Go support.
+             GoLanguageActivation still binds .go at runtime as a fallback; re-associating an
+             extension we already own is a no-op. Language id is "GoPortable" (unique). -->
         <fileType
             name="Go File"
             language="GoPortable"
             implementationClass="io.genai.go.lang.GoFileType"
-            fieldName="INSTANCE"/>
+            fieldName="INSTANCE"
+            extensions="go"/>
         <lang.syntaxHighlighterFactory
             language="GoPortable"
             implementationClass="io.genai.go.lang.GoSyntaxHighlighterFactory"/>
